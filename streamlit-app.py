@@ -16,7 +16,7 @@ st.text("Mohon upload gambar lesi kulit dari jarak 5-15cm dengan format jpg/jpeg
 class EfficientNetModel(nn.Module):
     def __init__(self, num_classes, extractor_trainable=True):
         super(EfficientNetModel, self).__init__()
-        efficientnet = models.efficientnet_b2(pretrained=True)
+        efficientnet = models.efficientnet_b0(pretrained=True)
 
         if not extractor_trainable:
             for param in efficientnet.parameters():
