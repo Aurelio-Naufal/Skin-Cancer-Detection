@@ -16,7 +16,7 @@ st.text("Mohon upload gambar lesi kulit dari jarak 5-15cm dengan format jpg/jpeg
 class EfficientNetModel(nn.Module):
     def __init__(self, num_classes, extractor_trainable=True):
         super(EfficientNetModel, self).__init__()
-        efficientnet = models.efficientnet_b0(pretrained=True)
+        efficientnet = models.efficientnet_b2(pretrained=True)
 
         if not extractor_trainable:
             for param in efficientnet.parameters():
@@ -35,7 +35,7 @@ class EfficientNetModel(nn.Module):
 
 @st.cache(allow_output_mutation=True)
 def load_model():
-    model = EfficientNetModel(num_classes=8)
+    model = EfficientNetModel(num_classes=8, model_name="efficientnet_b2")
     state_dict = torch.load('effnet_skincancer2_weights.pth', map_location=torch.device('cpu'))
     model.load_state_dict(state_dict)
     model = model.to('cpu')
