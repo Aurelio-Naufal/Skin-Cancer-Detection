@@ -8,39 +8,38 @@ import numpy as np
 import streamlit as st
 import PIL
 
-st.set_option('deprecation.showfileUploaderEncoding',False)
-st.title("Prototype SkinScan - Deteksi Kanker Kulit dan Penyakit Kulit")
-st.text("Mohon upload gambar lesi kulit dengan format jpg/jpeg/png.")
+st.set_option('deprecation.showfileUploaderEncoding', False)
+st.title("Prototype Skin Cancer Detection App - Deteksi Penyakit Kanker Kulit")
+st.text("Mohon upload gambar lesi kulit dari jarak 5-15cm dengan format jpg/jpeg/png.")
 
-class ResNetModel(nn.Module):
+# EfficientNet Model Class
+class EfficientNetModel(nn.Module):
     def __init__(self, num_classes, extractor_trainable=True):
-        super(ResNetModel, self).__init__()
-        resnet = models.resnet34(pretrained=True)
-        
+        super(EfficientNetModel, self).__init__()
+        efficientnet = models.efficientnet_b0(pretrained=True)
+
         if not extractor_trainable:
-            for param in resnet.parameters():
+            for param in efficientnet.parameters():
                 param.requires_grad = False
-        
-        self.feature_extractor = nn.Sequential(*list(resnet.children())[:-1])
-        num_features = resnet.fc.in_features
-        self.fc = nn.Linear(num_features, num_classes)
+
+        # Extract feature extractor and adjust the classifier for num_classes
+        self.feature_extractor = efficientnet.features
+        num_features = efficientnet.classifier[1].in_features
+        self.classifier = nn.Linear(num_features, num_classes)
 
     def forward(self, x):
         x = self.feature_extractor(x)
         x = torch.flatten(x, 1)
-        x = self.fc(x)
+        x = self.classifier(x)
         return x
 
 @st.cache(allow_output_mutation=True)
-
 def load_model():
-    model = ResNetModel(num_classes=13)
-    state_dict = torch.load('resnet3_weights.pth', map_location=torch.device('cpu'))
-    # Load the state dict into the model
-    model.load_state_dict(state_dict) 
-    # Move the model to the CPU
+    model = EfficientNetModel(num_classes=8)
+    state_dict = torch.load('effnet_skincancer2_weights.pth', map_location=torch.device('cpu'))
+    model.load_state_dict(state_dict)
     model = model.to('cpu')
-    model.eval()  # Set model to evaluation mode
+    model.eval()
     return model
 
 def preprocess_image(image_file):
@@ -63,7 +62,7 @@ def preprocess_image(image_file):
     # Apply the necessary transforms for your model
     preprocess = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((224, 224)),
+        transforms.Resize((224, 224)),  # Match EfficientNet input size
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
@@ -87,7 +86,7 @@ with st.spinner("Meload model ke memori..."):
     model = load_model()
 
 # Class mapping for predictions
-class_mapping = {'Chickenpox': 0, 'Cowpox': 1, 'HFMD': 2, 'Healthy': 3, 'Measles': 4, 'Monkeypox': 5, 'Actinic Keratosis': 6, 'Basal Cell Carcinoma': 7, 'Benign Keratosis Lesion': 8, 'Dermato Fibroma': 9, 'Melanoma': 10, 'Melanocytic Nevi': 11, 'Vascular Skin Lesion': 12}
+class_mapping = {'Actinic Keratosis': 0, 'Basal Cell Carcinoma': 1, 'Benign Keratosis Lesion': 2, 'Dermato Fibroma': 3, 'Melanoma': 4, 'Non Cancer': 5, 'Melanocytic Nevi': 6, 'Vascular Skin Lesion': 7}
 
 # Image uploader
 uploaded_file = st.file_uploader("Upload Foto Lesi", type=["jpg", "jpeg", "png"])
@@ -104,14 +103,14 @@ if uploaded_file is not None:
     st.write(f"Hasil Prediksi: {predicted_class}")
 
     # Get the top 3 classes and their probabilities
-    top3_prob, top3_idx = torch.topk(probabilities, 3, dim=1)
-    
+    top1_prob, top1_idx = torch.topk(probabilities, 1, dim=1)
+
     # Sort the top 3 classes by probability
-    top3_classes = [(list(class_mapping.keys())[i], top3_prob[0][idx].item()) 
-                    for idx, i in enumerate(top3_idx[0])]
-    
+    top1_classes = [(list(class_mapping.keys())[i], top1_prob[0][idx].item())
+                    for idx, i in enumerate(top1_idx[0])]
+
     # Display the top 3 classes and their probabilities
-    st.write("Top 3 Prediksi:")
+    st.write("Hasil Prediksi Gambar Lesi Kulit:")
     for class_name, prob in top3_classes:
         st.write(f"{class_name}: {prob:.4f}")
 
