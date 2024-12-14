@@ -7,6 +7,7 @@ from torchvision import transforms
 import numpy as np
 import streamlit as st
 import PIL
+import timm
 
 st.set_option('deprecation.showfileUploaderEncoding', False)
 st.title("Prototype Skin Cancer Detection App - Deteksi Penyakit Kanker Kulit")
@@ -14,7 +15,7 @@ st.text("Mohon upload gambar lesi kulit dari jarak 5-15cm dengan format jpg/jpeg
 
 # EfficientNet Model Class
 class EfficientNetModel(nn.Module):
-    def __init__(self, num_classes, extractor_trainable=True):
+    def __init__(self, num_classes, model_name="efficientnet_b2", extractor_trainable=True):
         super(EfficientNetModel, self).__init__()
         efficientnet = models.efficientnet_b2(pretrained=True)
 
