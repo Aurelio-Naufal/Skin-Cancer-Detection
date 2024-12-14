@@ -17,22 +17,19 @@ st.text("Mohon upload gambar lesi kulit dari jarak 5-15cm dengan format jpg/jpeg
 class EfficientNetModel(nn.Module):
     def __init__(self, num_classes, model_name="efficientnet_b2", extractor_trainable=True):
         super(EfficientNetModel, self).__init__()
-        efficientnet = models.efficientnet_b2(pretrained=True)
+        # Load EfficientNet using timm
+        self.model = timm.create_model(model_name, pretrained=True, num_classes=num_classes)
 
         if not extractor_trainable:
-            for param in efficientnet.parameters():
+            for param in self.model.parameters():
                 param.requires_grad = False
 
-        # Extract feature extractor and adjust the classifier for num_classes
-        self.feature_extractor = efficientnet.features
-        num_features = efficientnet.classifier[1].in_features
-        self.classifier = nn.Linear(num_features, num_classes)
+            # Ensure classifier remains trainable
+            for param in self.model.get_classifier().parameters():
+                param.requires_grad = True
 
     def forward(self, x):
-        x = self.feature_extractor(x)
-        x = torch.flatten(x, 1)
-        x = self.classifier(x)
-        return x
+        return self.model(x)
 
 @st.cache(allow_output_mutation=True)
 def load_model():
@@ -103,15 +100,15 @@ if uploaded_file is not None:
     st.image(uploaded_file, caption="Gambar Lesi Kulit", use_column_width=True)
     st.write(f"Hasil Prediksi: {predicted_class}")
 
-    # Get the top 3 classes and their probabilities
+    # Get the top classes and their probabilities
     top1_prob, top1_idx = torch.topk(probabilities, 1, dim=1)
 
-    # Sort the top 3 classes by probability
+    # Sort the top classes by probability
     top1_classes = [(list(class_mapping.keys())[i], top1_prob[0][idx].item())
                     for idx, i in enumerate(top1_idx[0])]
 
-    # Display the top 3 classes and their probabilities
-    st.write("Hasil Prediksi Gambar Lesi Kulit:")
+    # Display the top classes and their probabilities
+    st.write("Lesi Kulit anda Adalah:")
     for class_name, prob in top1_classes:
         st.write(f"{class_name}: {prob:.4f}")
 
