@@ -112,7 +112,7 @@ if uploaded_file is not None:
 
     # Display the top 3 classes and their probabilities
     st.write("Hasil Prediksi Gambar Lesi Kulit:")
-    for class_name, prob in top3_classes:
+    for class_name, prob in top1_classes:
         st.write(f"{class_name}: {prob:.4f}")
 
     # Display Explanation
